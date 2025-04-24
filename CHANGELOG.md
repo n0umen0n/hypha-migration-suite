@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.0](https://github.com/hypha-dao/dho-web-client/compare/v2.51.5...v2.52.0) (2025-04-24)
+
+
+### Features
+
+* added sort by members in Explore page ([b24ea8d](https://github.com/hypha-dao/dho-web-client/commit/b24ea8d67162eac8c8cebb911d74d52f27259347))
+
 ## [2.51.5](https://github.com/hypha-dao/dho-web-client/compare/v2.51.4...v2.51.5) (2024-12-20)
 
 
