@@ -1,8 +1,0 @@
-query questStart($daoId: String!) {
-  getDao (docId: $daoId) {
-    docId
-    queststartAggregate {
-      count
-    }
-  }
-}

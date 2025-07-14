@@ -1,8 +1,0 @@
-query countMembers ($daoId: String!) {
-  getDao (docId: $daoId) {
-    docId
-    memberAggregate {
-      count
-    }
-  }
-}

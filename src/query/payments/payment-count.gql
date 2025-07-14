@@ -1,5 +1,0 @@
-query PaymentCount($user: String!) {
-  aggregatePayment(filter: { details_recipient_n: { eq: $user } }) {
-    count
-  }
-}

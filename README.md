@@ -1,55 +1,80 @@
-<p align="center">
-  <a href="https://hypha.earth/">
-    <img src="https://hypha.earth/wp-content/themes/hypha-theme/img/round-logo.svg" height="128">
-    <h1 align="center">Hypha DHO Web Client</h1>
-  </a>
-</p>
+# Hypha Token Migration Suite
 
-<p align="center">
-  <a aria-label="GitHub version" href="https://github.com/hypha-dao/dho-web-client">
-<img alt="GitHub package.json version (subfolder of monorepo)" src="https://img.shields.io/github/package-json/v/hypha-dao/dho-web-client?style=for-the-badge&labelColor=000000">
-  </a>
-  <a aria-label="License" href="https://github.com/hypha-dao/dho-web-client/blob/master/license.md">
-    <img alt="" src="https://img.shields.io/github/license/hypha-dao/dho-web-client?style=for-the-badge&labelColor=000000">
-  </a>
-  <a aria-label="Join the community on GitHub" href="https://github.com/hypha-dao/dho-web-client/discussions">
-    <img alt="Discord" src="https://img.shields.io/discord/722537361480613950?style=for-the-badge">
-  </a>
-</p>
+A complete solution for HYPHA token migration from Telos to Base network, including frontend interface and backend API for USDC transfers.
 
+## Projects
 
-**Welcome to Hypha!**
+### 🌐 [hypha-react-demo](./hypha-react-demo/)
 
-The DHO (Decentralized Human Organization) is a framework to build your organization from the ground up in an organic and participative way and together with others. We focus on two core functions at this point, decentralized payroll and distribution accounting for organizational and bioregional contexts.
+**Frontend Migration Interface**
 
-## Getting Started
+- React-based UI for HYPHA token migration
+- Integrates with Hypha Wallet for Telos transactions
+- Clean, modern interface for migration process
+- Built with Vite for fast development
 
-Visit <a aria-label="hypha" href="https://dao.hypha.earth/hypha/">dao.hypha.earth/hypha</a> to join us.
+### 🔧 [hypha-migration-api](./hypha-migration-api/)
 
-## Community
+**Backend API Service**
 
-Hypha community can be found on [Discord](https://discord.gg/XU2m9CdQN4), where you can ask questions, voice ideas, and share your projects.
+- Verifies HYPHA migration completion on Telos
+- Executes test USDC transfers on Base mainnet
+- Multiple verification methods (migration table, transaction ID, hybrid)
+- Serverless deployment ready for Vercel
 
-## Contributing
+## Quick Start
 
-Please see our [contributing.md](/contributing.md).
+### Frontend (hypha-react-demo)
 
-## Contributors
+```bash
+cd hypha-react-demo
+npm install
+npm run dev
+```
 
-Thanks go to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+### Backend API (hypha-migration-api)
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
+```bash
+cd hypha-migration-api
+# Set up environment variables (see ENVIRONMENT.md)
+vercel dev
+```
 
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
+## Deployment
 
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+### Frontend
 
-This project follows the [all-contributors](https://allcontributors.org) specification.
-Contributions of any kind are welcome!
+Deploy to Vercel/Netlify from the `hypha-react-demo` directory.
+
+### Backend API
+
+Deploy to Vercel from the `hypha-migration-api` directory with these environment variables:
+
+- `PRIVATE_KEY`: Base mainnet wallet private key (for USDC transfers)
+- `NODE_ENV`: production
+
+## Features
+
+- ✅ **Complete Migration Flow**: From Telos transaction to Base verification
+- ✅ **Wallet Integration**: Seamless Hypha Wallet connectivity
+- ✅ **Multiple Verification**: Table verification with transaction fallback
+- ✅ **Production Ready**: Serverless backend, optimized frontend
+- ✅ **Test Transfers**: Automated USDC transfers after verified migration
+
+## Architecture
+
+```
+Frontend (React) → Hypha Wallet → Telos Migration Contract
+     ↓
+Migration API → Verify on Telos → Execute USDC Transfer on Base
+```
+
+## Documentation
+
+- [Frontend README](./hypha-react-demo/README.md)
+- [API Documentation](./hypha-migration-api/README.md)
+- [Environment Setup](./hypha-migration-api/ENVIRONMENT.md)
 
 ## License
 
-[Apache v2.0](LICENSE) © Hypha DHO
+MIT License

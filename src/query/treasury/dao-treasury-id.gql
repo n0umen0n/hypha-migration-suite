@@ -1,7 +1,0 @@
-query daoTreasury($daoId: String!) {
-  queryDao (filter: { docId: { eq: $daoId }}) {
-    treasury {
-      id: docId
-    }
-  }
-}

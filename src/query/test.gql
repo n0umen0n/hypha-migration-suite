@@ -1,5 +1,0 @@
-query badgesTest {
-  queryDao {
-    docId
-  }
-}

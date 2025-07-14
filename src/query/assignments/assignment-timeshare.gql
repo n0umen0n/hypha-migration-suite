@@ -1,6 +1,0 @@
-query timeshare ($docId: Int64!) {
-  queryTimeshare(filter:{details_assignment_i:{eq:$docId}}) {
-    details_startDate_t
-    details_timeShareX100_i
-  }
-}
