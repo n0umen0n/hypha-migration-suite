@@ -38,6 +38,13 @@ const USDC_ABI = [
 const TELOS_RPC_URL = 'https://mainnet.telos.net';
 const MIGRATION_CONTRACT = 'migratehypha';
 
+// Helper function to convert BigInt values to strings for JSON serialization
+function serializeBigInt(obj) {
+  return JSON.parse(JSON.stringify(obj, (key, value) => 
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+}
+
 class BlockchainService {
   constructor() {
     this.baseProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
@@ -172,28 +179,54 @@ class BlockchainService {
     }
   }
 
-  // Get USDC balance
+  // Get USDC balance with improved error handling
   async getUSDCBalance(address) {
     try {
       if (!this.usdcContract) {
         throw new Error('USDC contract not initialized');
       }
 
-      const balance = await this.usdcContract.balanceOf(address);
-      const decimals = await this.usdcContract.decimals();
+      console.log(`Getting USDC balance for: ${address}`);
+
+      // Get balance and decimals with proper error handling
+      const [balance, decimals] = await Promise.allSettled([
+        this.usdcContract.balanceOf(address),
+        this.usdcContract.decimals()
+      ]);
+
+      if (balance.status === 'rejected') {
+        console.error('Balance query failed:', balance.reason);
+        throw new Error(`Failed to get balance: ${balance.reason.message || balance.reason}`);
+      }
+
+      if (decimals.status === 'rejected') {
+        console.error('Decimals query failed:', decimals.reason);
+        // Default to 6 decimals for USDC if decimals call fails
+        const decimalsValue = 6;
+        const balanceFormatted = ethers.formatUnits(balance.value, decimalsValue);
+        
+        return {
+          balance: balance.value.toString(),
+          formatted: balanceFormatted,
+          decimals: decimalsValue
+        };
+      }
+
+      const balanceFormatted = ethers.formatUnits(balance.value, decimals.value);
       
       return {
-        balance: balance.toString(),
-        formatted: ethers.formatUnits(balance, decimals),
-        decimals: decimals
+        balance: balance.value.toString(),
+        formatted: balanceFormatted,
+        decimals: Number(decimals.value)
       };
+
     } catch (error) {
       console.error('Error getting USDC balance:', error);
       throw error;
     }
   }
 
-  // Transfer USDC
+  // Transfer USDC with BigInt handling
   async transferUSDC(toAddress, amount) {
     try {
       if (!this.wallet || !this.usdcContract) {
@@ -231,6 +264,7 @@ class BlockchainService {
       const receipt = await tx.wait();
       console.log(`Transaction confirmed in block: ${receipt.blockNumber}`);
 
+      // Return serializable data (convert BigInt to string)
       return {
         txHash: tx.hash,
         blockNumber: receipt.blockNumber,
