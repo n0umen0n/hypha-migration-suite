@@ -3,7 +3,7 @@
   "name": "hypha-migration-api",
   "functions": {
     "api/**/*.js": {
-      "runtime": "@vercel/node@18.x"
+      "runtime": "nodejs18.x"
     }
   },
   "env": {
