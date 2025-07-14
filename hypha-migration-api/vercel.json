@@ -1,12 +1,4 @@
 {
-  "version": 2,
-  "name": "hypha-migration-api",
-  "functions": {
-    "api/**/*.js": {}
-  },
-  "env": {
-    "NODE_ENV": "production"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
