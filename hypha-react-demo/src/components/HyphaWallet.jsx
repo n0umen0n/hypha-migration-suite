@@ -820,11 +820,13 @@ const HyphaWallet = () => {
                   marginRight: 'auto',
                   textAlign: 'center'
                 }}>
-                  You have successfully migrated your tokens. Tokens are now visible under your profile in the Hypha platform.
+                  Your Hypha Tokens have been successfully migrated and are now visible under your profile on the Hypha platform.
                   <br /><br />
-                  You can use the tokens to access the Hypha platform's functionalities.
+                  You can now use your Hypha Tokens to access all features and functionalities within the platform.
                   <br /><br />
-                  Also, overtime you might notice increase in your HYPHA balance this is due to the rewards that are issued to all the token holders!
+                  🌱 Over time, you may notice an increase in your Hypha balance, this is due to the rewards regularly issued to all token holders.
+                  <br /><br />
+                  Thank you for being part of the Hypha community!
                 </p>
               </div>
             ) : (
