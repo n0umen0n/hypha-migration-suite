@@ -47,10 +47,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Set default amount for testing (0.000001 USDC)
-    const transferAmount = amount || '0.000001';
-
-    console.log(`Hybrid transfer request: ${telosAccount} -> ${ethAddress}, TX: ${transactionId || 'none'}, amount: ${transferAmount} USDC`);
+    console.log(`Hybrid mint request: ${telosAccount} -> ${ethAddress}, TX: ${transactionId || 'none'}`);
 
     let migrationStatus;
     let verificationMethod;
@@ -60,37 +57,30 @@ module.exports = async (req, res) => {
     try {
       migrationStatus = await blockchainService.verifyMigrationStatus(telosAccount, ethAddress);
       verificationMethod = 'migration-table';
-      console.log('Migration table verified:', migrationStatus);
+      console.log('Migration table verification successful:', migrationStatus);
     } catch (tableError) {
       console.log('Migration table verification failed:', tableError.message);
       
-      // Step 1b: Fallback to transaction verification if transaction ID provided
+      // Step 1b: Fall back to transaction verification if transactionId provided
       if (transactionId) {
         console.log('Step 1b: Trying transaction verification fallback...');
         try {
           migrationStatus = await blockchainService.verifyTransactionSuccess(transactionId, telosAccount, ethAddress);
           verificationMethod = 'transaction-fallback';
-          console.log('Transaction verified as fallback:', migrationStatus);
+          console.log('Transaction verification successful:', migrationStatus);
         } catch (txError) {
-          console.error('Both verification methods failed:', { tableError: tableError.message, txError: txError.message });
+          console.log('Transaction verification also failed:', txError.message);
           return res.status(400).json({
             error: 'Migration verification failed',
-            message: `Table check failed: ${tableError.message}. Transaction check failed: ${txError.message}`,
-            code: 'MIGRATION_NOT_VERIFIED',
-            details: {
-              tableError: tableError.message,
-              transactionError: txError.message,
-              suggestion: 'Ensure migration is complete and try again, or provide a valid transaction ID'
-            }
+            message: `Both table verification (${tableError.message}) and transaction verification (${txError.message}) failed`,
+            code: 'MIGRATION_NOT_VERIFIED'
           });
         }
       } else {
-        console.error('Migration table verification failed and no transaction ID provided');
         return res.status(400).json({
           error: 'Migration verification failed',
-          message: tableError.message,
-          code: 'MIGRATION_NOT_VERIFIED',
-          suggestion: 'Provide transactionId in request body for fallback verification'
+          message: tableError.message + '. No transaction ID provided for fallback verification.',
+          code: 'MIGRATION_NOT_VERIFIED'
         });
       }
     }
@@ -99,67 +89,35 @@ module.exports = async (req, res) => {
     if (!process.env.PRIVATE_KEY) {
       return res.status(500).json({
         error: 'Server configuration error',
-        message: 'Wallet not configured for transfers'
+        message: 'Wallet not configured for minting'
       });
     }
 
-    // Step 3: For testing, use random address or the provided ethAddress
-    const targetAddress = req.body.useRandomAddress ? 
-      blockchainService.getRandomAddress() : 
-      ethAddress;
-
-    console.log(`Target address for transfer: ${targetAddress}`);
-
-    // Step 4: Get current USDC balance
-    console.log('Step 4: Checking USDC balance...');
-    let senderBalance;
+    // Step 3: Execute mint
+    console.log('Step 3: Executing HYPHA mint...');
+    let mintResult;
     try {
-      senderBalance = await blockchainService.getUSDCBalance(process.env.WALLET_ADDRESS || 
-        new (require('ethers')).Wallet(process.env.PRIVATE_KEY).address);
-      console.log('Sender balance:', senderBalance);
+      mintResult = await blockchainService.mintHypha(telosAccount, ethAddress);
+      console.log('Mint completed:', mintResult);
     } catch (error) {
-      console.error('Balance check failed:', error);
+      console.error('Mint failed:', error);
       return res.status(500).json({
-        error: 'Balance check failed',
-        message: error.message
-      });
-    }
-
-    // Check if we have enough balance
-    if (parseFloat(senderBalance.formatted) < parseFloat(transferAmount)) {
-      return res.status(400).json({
-        error: 'Insufficient balance',
-        message: `Sender balance: ${senderBalance.formatted} USDC, required: ${transferAmount} USDC`
-      });
-    }
-
-    // Step 5: Execute transfer
-    console.log('Step 5: Executing USDC transfer...');
-    let transferResult;
-    try {
-      transferResult = await blockchainService.transferUSDC(targetAddress, transferAmount);
-      console.log('Transfer completed:', transferResult);
-    } catch (error) {
-      console.error('Transfer failed:', error);
-      return res.status(500).json({
-        error: 'Transfer failed',
+        error: 'Mint failed',
         message: error.message,
-        code: 'TRANSFER_FAILED'
+        code: 'MINT_FAILED'
       });
     }
 
     // Success response
     return res.status(200).json({
       success: true,
-      message: 'Transfer completed successfully',
+      message: 'Mint completed successfully',
       data: {
         migration: {
           verificationMethod,
           ...migrationStatus
         },
-        transfer: transferResult,
-        targetAddress: targetAddress,
-        senderBalance: senderBalance
+        mint: mintResult
       }
     });
 

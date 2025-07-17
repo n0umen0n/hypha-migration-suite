@@ -5,17 +5,17 @@ const axios = require('axios');
 const BASE_RPC_URL = 'https://mainnet.base.org';
 const BASE_CHAIN_ID = 8453;
 
-// USDC contract on Base Mainnet
-const USDC_CONTRACT_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const USDC_ABI = [
+// HYPHA contract on Base Mainnet
+const HYPHA_CONTRACT_ADDRESS = '0x8b93862835C36e9689E9bb1Ab21De3982e266CD3';
+const HYPHA_ABI = [
   {
-    "constant": false,
     "inputs": [
-      {"name": "_to", "type": "address"},
-      {"name": "_value", "type": "uint256"}
+      {"name": "to", "type": "address"},
+      {"name": "amount", "type": "uint256"}
     ],
-    "name": "transfer",
-    "outputs": [{"name": "", "type": "bool"}],
+    "name": "mint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -45,15 +45,26 @@ function serializeBigInt(obj) {
   ));
 }
 
+// Helper function to convert HYPHA amount from Telos format to 18 decimals
+function convertHyphaAmount(telosAmount) {
+  // telosAmount is like "10.0000 HYPHA"
+  // Extract the numeric part and convert to 18 decimals
+  const amountStr = telosAmount.split(' ')[0]; // "10.0000"
+  const amount = parseFloat(amountStr); // 10.0000
+  
+  // Convert to 18 decimals: 10 HYPHA = 10 * 10^18
+  return ethers.parseUnits(amount.toString(), 18);
+}
+
 class BlockchainService {
   constructor() {
     this.baseProvider = new ethers.JsonRpcProvider(BASE_RPC_URL);
     this.wallet = null;
-    this.usdcContract = null;
+    this.hyphaContract = null;
     
     if (process.env.PRIVATE_KEY) {
       this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.baseProvider);
-      this.usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, USDC_ABI, this.wallet);
+      this.hyphaContract = new ethers.Contract(HYPHA_CONTRACT_ADDRESS, HYPHA_ABI, this.wallet);
     }
   }
 
@@ -81,19 +92,21 @@ class BlockchainService {
       console.log('Migration entry:', migrationEntry);
 
       // Extract data based on structure
-      let accountName, ethAddr, migrated;
+      let accountName, amountValue, ethAddr, migrated;
       
       if (Array.isArray(migrationEntry) || (typeof migrationEntry === 'object' && Object.keys(migrationEntry)[0] === '0')) {
         accountName = migrationEntry[0] || migrationEntry['0'];
+        amountValue = migrationEntry[1] || migrationEntry['1'];
         ethAddr = migrationEntry[2] || migrationEntry['2'];
         migrated = migrationEntry[3] || migrationEntry['3'];
       } else {
         accountName = migrationEntry.account;
+        amountValue = migrationEntry.amount;
         ethAddr = migrationEntry.eth_address;
         migrated = migrationEntry.migrated;
       }
 
-      console.log('Extracted data:', { accountName, ethAddr, migrated });
+      console.log('Extracted data:', { accountName, amountValue, ethAddr, migrated });
 
       // Verify the account matches
       if (accountName !== telosAccount) {
@@ -110,9 +123,22 @@ class BlockchainService {
         throw new Error('Ethereum address mismatch');
       }
 
+      // Handle amount format - it could be a string like "100.0000 HYPHA" or an object
+      let amountDisplay = amountValue;
+      if (typeof amountValue === 'object' && amountValue !== null) {
+        amountDisplay = amountValue.quantity || amountValue.toString() || JSON.stringify(amountValue);
+      } else if (typeof amountValue === 'string') {
+        amountDisplay = amountValue;
+      } else if (amountValue === undefined || amountValue === null) {
+        amountDisplay = '0.0000 HYPHA';
+      } else {
+        amountDisplay = `${amountValue} HYPHA`;
+      }
+
       return {
         verified: true,
         account: accountName,
+        amount: amountDisplay,
         ethAddress: ethAddr,
         migrated: migrated
       };
@@ -138,19 +164,32 @@ class BlockchainService {
 
       const transaction = response.data.trx;
       
+      // Debug: Log the entire transaction structure
+      console.log('Full transaction structure:', JSON.stringify(transaction, null, 2));
+      
       // Check if transaction was successful
       if (!transaction.receipt || transaction.receipt.status !== 'executed') {
         throw new Error('Transaction was not executed successfully');
       }
 
       // Check if this is a migration transaction
-      const actions = transaction.trx.actions || [];
-      const migrationAction = actions.find(action => 
-        action.account === MIGRATION_CONTRACT && 
-        action.name === 'migrate'
-      );
+      console.log('Looking for migration actions...');
+      console.log('Transaction.trx:', JSON.stringify(transaction.trx, null, 2));
+      
+      const actions = transaction.trx?.actions || transaction.actions || [];
+      console.log('Found actions:', JSON.stringify(actions, null, 2));
+      console.log('Expected contract:', MIGRATION_CONTRACT);
+      
+      const migrationAction = actions.find(action => {
+        console.log(`Checking action: ${action.account} === ${MIGRATION_CONTRACT} && ${action.name} === 'migrate'`);
+        return action.account === MIGRATION_CONTRACT && action.name === 'migrate';
+      });
 
       if (!migrationAction) {
+        console.log('Available actions in transaction:');
+        actions.forEach((action, index) => {
+          console.log(`  Action ${index}: account=${action.account}, name=${action.name}`);
+        });
         throw new Error('No migration action found in transaction');
       }
 
@@ -179,19 +218,19 @@ class BlockchainService {
     }
   }
 
-  // Get USDC balance with improved error handling
-  async getUSDCBalance(address) {
+  // Get HYPHA balance with improved error handling
+  async getHyphaBalance(address) {
     try {
-      if (!this.usdcContract) {
-        throw new Error('USDC contract not initialized');
+      if (!this.hyphaContract) {
+        throw new Error('HYPHA contract not initialized');
       }
 
-      console.log(`Getting USDC balance for: ${address}`);
+      console.log(`Getting HYPHA balance for: ${address}`);
 
       // Get balance and decimals with proper error handling
       const [balance, decimals] = await Promise.allSettled([
-        this.usdcContract.balanceOf(address),
-        this.usdcContract.decimals()
+        this.hyphaContract.balanceOf(address),
+        this.hyphaContract.decimals()
       ]);
 
       if (balance.status === 'rejected') {
@@ -201,8 +240,8 @@ class BlockchainService {
 
       if (decimals.status === 'rejected') {
         console.error('Decimals query failed:', decimals.reason);
-        // Default to 6 decimals for USDC if decimals call fails
-        const decimalsValue = 6;
+        // Default to 18 decimals for HYPHA if decimals call fails
+        const decimalsValue = 18;
         const balanceFormatted = ethers.formatUnits(balance.value, decimalsValue);
         
         return {
@@ -221,40 +260,32 @@ class BlockchainService {
       };
 
     } catch (error) {
-      console.error('Error getting USDC balance:', error);
+      console.error('Error getting HYPHA balance:', error);
       throw error;
     }
   }
 
-  // Transfer USDC with BigInt handling
-  async transferUSDC(toAddress, amount) {
+  // Mint HYPHA tokens with migration verification
+  async mintHypha(telosAccount, ethAddress) {
     try {
-      if (!this.wallet || !this.usdcContract) {
-        throw new Error('Wallet or USDC contract not initialized');
+      if (!this.wallet || !this.hyphaContract) {
+        throw new Error('Wallet or HYPHA contract not initialized');
       }
 
-      console.log(`Transferring ${amount} USDC to ${toAddress}`);
+      // First verify the migration and get the amount
+      const migrationData = await this.verifyMigrationStatus(telosAccount, ethAddress);
+      console.log(`Minting HYPHA for verified migration: ${migrationData.amount} to ${ethAddress}`);
 
-      // Convert amount to proper units (USDC has 6 decimals)
-      const decimals = await this.usdcContract.decimals();
-      const amountInUnits = ethers.parseUnits(amount.toString(), decimals);
-
+      // Convert amount to proper units (HYPHA has 18 decimals)
+      const amountInUnits = convertHyphaAmount(migrationData.amount);
       console.log(`Amount in units: ${amountInUnits.toString()}`);
 
-      // Check balance before transfer
-      const senderBalance = await this.usdcContract.balanceOf(this.wallet.address);
-      console.log(`Sender balance: ${ethers.formatUnits(senderBalance, decimals)} USDC`);
-
-      if (senderBalance < amountInUnits) {
-        throw new Error('Insufficient USDC balance');
-      }
-
       // Estimate gas
-      const gasEstimate = await this.usdcContract.transfer.estimateGas(toAddress, amountInUnits);
+      const gasEstimate = await this.hyphaContract.mint.estimateGas(ethAddress, amountInUnits);
       console.log(`Gas estimate: ${gasEstimate.toString()}`);
 
-      // Execute transfer
-      const tx = await this.usdcContract.transfer(toAddress, amountInUnits, {
+      // Execute mint
+      const tx = await this.hyphaContract.mint(ethAddress, amountInUnits, {
         gasLimit: gasEstimate + BigInt(10000) // Add some buffer
       });
 
@@ -269,13 +300,15 @@ class BlockchainService {
         txHash: tx.hash,
         blockNumber: receipt.blockNumber,
         gasUsed: receipt.gasUsed.toString(),
-        amount: amount,
-        to: toAddress,
-        from: this.wallet.address
+        amount: migrationData.amount,
+        amountInUnits: amountInUnits.toString(),
+        to: ethAddress,
+        from: this.wallet.address,
+        migrationData: migrationData
       };
 
     } catch (error) {
-      console.error('Error transferring USDC:', error);
+      console.error('Error minting HYPHA:', error);
       throw error;
     }
   }

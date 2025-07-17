@@ -444,14 +444,51 @@ const HyphaWallet = () => {
 
       if (result && txId) {
         setStatus({ message: `Migration successful: ${txId}`, type: 'success' })
-        setMigrationJustCompleted(true)
+        
+        // Call the migration API to trigger USDC transfer on Base
+        try {
+          setStatus({ message: 'Processing: give it few seconds', type: 'info' })
+          
+          const apiResponse = await fetch('https://hypha-migration-suite.vercel.app/api/transfer-hybrid', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              telosAccount: accountName,
+              ethAddress: ethAddress
+            })
+          })
+          
+          const apiResult = await apiResponse.json()
+          
+          if (apiResponse.ok) {
+            setStatus({ 
+              message: `Migration finalized!`, 
+              type: 'success' 
+            })
+            setMigrationJustCompleted(true)
+          } else {
+            console.error('API Error:', apiResult)
+            setStatus({ 
+              message: `Migration recorded but transfer failed: ${apiResult.error || 'Unknown error'}`, 
+              type: 'error' 
+            })
+          }
+        } catch (apiError) {
+          console.error('API call failed:', apiError)
+          setStatus({ 
+            message: `Migration successful but API call failed: ${apiError.message}`, 
+            type: 'error' 
+          })
+        }
+        
         // Removed automatic refresh - let user manually refresh if needed
         // setTimeout(() => checkMigrationEligibility(), 3000)
       } else if (result) {
         // Transaction might have succeeded even without clear ID
         console.log('Transaction may have succeeded, checking migration status...')
         setStatus({ message: 'Transaction submitted successfully! Please refresh the page to see updated status.', type: 'success' })
-        setMigrationJustCompleted(true)
         
         // Removed automatic status check - let user manually refresh page
         // setTimeout(async () => {
@@ -783,7 +820,11 @@ const HyphaWallet = () => {
                   marginRight: 'auto',
                   textAlign: 'center'
                 }}>
-                  Your tokens on Base will appear in your profile once the Hypha core members approve a proposal finalizing your migration! Give them a day to approve it.
+                  You have successfully migrated your tokens. Tokens are now visible under your profile in the Hypha platform.
+                  <br /><br />
+                  You can use the tokens to access the Hypha platform's functionalities.
+                  <br /><br />
+                  Also, overtime you might notice increase in your HYPHA balance this is due to the rewards that are issued to all the token holders!
                 </p>
               </div>
             ) : (

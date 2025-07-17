@@ -37,31 +37,32 @@ module.exports = async (req, res) => {
     
     let walletAddress = null;
     let walletConfigured = false;
-    let balanceInfo = null;
 
     try {
       if (process.env.PRIVATE_KEY) {
         const { ethers } = require('ethers');
         walletAddress = new ethers.Wallet(process.env.PRIVATE_KEY).address;
         walletConfigured = true;
-
-        // Try to get USDC balance
-        try {
-          balanceInfo = await blockchainService.getUSDCBalance(walletAddress);
-        } catch (error) {
-          console.log('Balance check failed:', error.message);
-          balanceInfo = { error: error.message };
-        }
       }
     } catch (error) {
       console.log('Wallet configuration error:', error.message);
     }
 
+    // Get wallet balance if configured
+    let balanceInfo = null;
+    if (walletConfigured && walletAddress) {
+      try {
+        balanceInfo = await blockchainService.getHyphaBalance(walletAddress);
+      } catch (error) {
+        console.error('Failed to get HYPHA balance:', error);
+        balanceInfo = { error: error.message };
+      }
+    }
+
     // Test Base network connectivity
     let baseNetworkStatus = 'unknown';
     try {
-      const provider = blockchainService.baseProvider;
-      const network = await provider.getNetwork();
+      const network = await blockchainService.baseProvider.getNetwork();
       baseNetworkStatus = `connected (chainId: ${network.chainId})`;
     } catch (error) {
       baseNetworkStatus = `error: ${error.message}`;
@@ -96,16 +97,16 @@ module.exports = async (req, res) => {
       endpoints: {
         '/api/health': 'GET - Health check',
         '/api/status': 'GET/POST - Check migration status',
-        '/api/transfer': 'POST - Execute USDC transfer (migration table verification)',
-        '/api/transfer-by-tx': 'POST - Execute USDC transfer (transaction ID verification)',
-        '/api/transfer-hybrid': 'POST - Execute USDC transfer (hybrid verification - recommended)'
+        '/api/transfer': 'POST - Execute HYPHA mint (migration table verification)',
+        '/api/transfer-by-tx': 'POST - Execute HYPHA mint (transaction ID verification)',
+        '/api/transfer-hybrid': 'POST - Execute HYPHA mint (hybrid verification - recommended)'
       }
     };
 
     if (balanceInfo) {
       healthData.wallet = {
         address: walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : null,
-        usdcBalance: balanceInfo.error ? { error: balanceInfo.error } : {
+        hyphaBalance: balanceInfo.error ? { error: balanceInfo.error } : {
           balance: balanceInfo.formatted,
           decimals: balanceInfo.decimals
         }

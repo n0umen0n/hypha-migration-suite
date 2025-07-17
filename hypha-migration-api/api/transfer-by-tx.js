@@ -47,10 +47,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Set default amount for testing (0.000001 USDC)
-    const transferAmount = amount || '0.000001';
-
-    console.log(`Transfer request by TX: ${telosAccount} -> ${ethAddress}, TX: ${transactionId}, amount: ${transferAmount} USDC`);
+    console.log(`Mint request by TX: ${telosAccount} -> ${ethAddress}, TX: ${transactionId}`);
 
     // Step 1: Verify migration transaction
     console.log('Step 1: Verifying migration transaction...');
@@ -71,67 +68,35 @@ module.exports = async (req, res) => {
     if (!process.env.PRIVATE_KEY) {
       return res.status(500).json({
         error: 'Server configuration error',
-        message: 'Wallet not configured for transfers'
+        message: 'Wallet not configured for minting'
       });
     }
 
-    // Step 3: For testing, use random address or the provided ethAddress
-    const targetAddress = req.body.useRandomAddress ? 
-      blockchainService.getRandomAddress() : 
-      ethAddress;
-
-    console.log(`Target address for transfer: ${targetAddress}`);
-
-    // Step 4: Get current USDC balance
-    console.log('Step 4: Checking USDC balance...');
-    let senderBalance;
+    // Step 3: Execute mint
+    console.log('Step 3: Executing HYPHA mint...');
+    let mintResult;
     try {
-      senderBalance = await blockchainService.getUSDCBalance(process.env.WALLET_ADDRESS || 
-        new (require('ethers')).Wallet(process.env.PRIVATE_KEY).address);
-      console.log('Sender balance:', senderBalance);
+      mintResult = await blockchainService.mintHypha(telosAccount, ethAddress);
+      console.log('Mint completed:', mintResult);
     } catch (error) {
-      console.error('Balance check failed:', error);
+      console.error('Mint failed:', error);
       return res.status(500).json({
-        error: 'Balance check failed',
-        message: error.message
-      });
-    }
-
-    // Check if we have enough balance
-    if (parseFloat(senderBalance.formatted) < parseFloat(transferAmount)) {
-      return res.status(400).json({
-        error: 'Insufficient balance',
-        message: `Sender balance: ${senderBalance.formatted} USDC, required: ${transferAmount} USDC`
-      });
-    }
-
-    // Step 5: Execute transfer
-    console.log('Step 5: Executing USDC transfer...');
-    let transferResult;
-    try {
-      transferResult = await blockchainService.transferUSDC(targetAddress, transferAmount);
-      console.log('Transfer completed:', transferResult);
-    } catch (error) {
-      console.error('Transfer failed:', error);
-      return res.status(500).json({
-        error: 'Transfer failed',
+        error: 'Mint failed',
         message: error.message,
-        code: 'TRANSFER_FAILED'
+        code: 'MINT_FAILED'
       });
     }
 
     // Success response
     return res.status(200).json({
       success: true,
-      message: 'Transfer completed successfully',
+      message: 'Mint completed successfully',
       data: {
         migration: {
           verificationMethod: 'transaction',
           ...transactionStatus
         },
-        transfer: transferResult,
-        targetAddress: targetAddress,
-        senderBalance: senderBalance
+        mint: mintResult
       }
     });
 
