@@ -1,6 +1,6 @@
 # Hypha Token Migration Suite
 
-A complete solution for HYPHA token migration from Telos to Base network, including frontend interface and backend API for USDC transfers.
+A complete solution for HYPHA token migration from Telos to Base network, including frontend interface and backend API for HYPHA token minting.
 
 ## Projects
 
@@ -18,7 +18,7 @@ A complete solution for HYPHA token migration from Telos to Base network, includ
 **Backend API Service**
 
 - Verifies HYPHA migration completion on Telos
-- Executes test USDC transfers on Base mainnet
+- Executes HYPHA token minting on Base mainnet
 - Multiple verification methods (migration table, transaction ID, hybrid)
 - Serverless deployment ready for Vercel
 
@@ -50,7 +50,7 @@ Deploy to Vercel/Netlify from the `hypha-react-demo` directory.
 
 Deploy to Vercel from the `hypha-migration-api` directory with these environment variables:
 
-- `PRIVATE_KEY`: Base mainnet wallet private key (for USDC transfers)
+- `PRIVATE_KEY`: Base mainnet wallet private key (authorized for HYPHA minting)
 - `NODE_ENV`: production
 
 ## Features
@@ -59,14 +59,14 @@ Deploy to Vercel from the `hypha-migration-api` directory with these environment
 - ✅ **Wallet Integration**: Seamless Hypha Wallet connectivity
 - ✅ **Multiple Verification**: Table verification with transaction fallback
 - ✅ **Production Ready**: Serverless backend, optimized frontend
-- ✅ **Test Transfers**: Automated USDC transfers after verified migration
+- ✅ **Automated Minting**: HYPHA tokens minted after verified migration
 
 ## Architecture
 
 ```
 Frontend (React) → Hypha Wallet → Telos Migration Contract
      ↓
-Migration API → Verify on Telos → Execute USDC Transfer on Base
+Migration API → Verify on Telos → Execute HYPHA Mint on Base
 ```
 
 ## Documentation

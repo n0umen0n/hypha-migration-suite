@@ -1,11 +1,11 @@
 # Hypha Migration API
 
-A backend API service for verifying HYPHA token migrations and executing test USDC transfers on Base mainnet. This API verifies that a migration has been completed on the Telos blockchain before allowing USDC transfers on Base.
+A backend API service for verifying HYPHA token migrations and executing HYPHA token minting on Base mainnet. This API verifies that a migration has been completed on the Telos blockchain before allowing HYPHA token minting on Base.
 
 ## Features
 
 - ✅ Verify HYPHA migration status on Telos blockchain
-- ✅ Execute USDC transfers on Base mainnet (only after verified migration)
+- ✅ Execute HYPHA token minting on Base mainnet (only after verified migration)
 - ✅ Multiple verification methods: migration table, transaction ID, or hybrid
 - ✅ Built for Vercel serverless deployment
 - ✅ CORS enabled for frontend integration
@@ -15,19 +15,25 @@ A backend API service for verifying HYPHA token migrations and executing test US
 ## Migration Verification Methods
 
 ### 1. Migration Table Verification (Recommended)
+
 **Endpoint**: `/api/transfer`
+
 - ✅ **Most Secure**: Verifies migration is recorded in the blockchain table
 - ✅ **Complete Data**: Access to migration amount, status, timestamps
 - ❌ **Timing Issues**: May fail if table hasn't updated after successful transaction
 
 ### 2. Transaction ID Verification (Fast)
+
 **Endpoint**: `/api/transfer-by-tx`
+
 - ✅ **Immediate**: Works right after transaction submission
 - ✅ **Transaction Proof**: Verifies the exact transaction succeeded
 - ❌ **Limited Data**: Only confirms transaction success, not table state
 
 ### 3. Hybrid Verification (Best of Both)
+
 **Endpoint**: `/api/transfer-hybrid`
+
 - ✅ **Reliable**: Tries table first, falls back to transaction
 - ✅ **User Friendly**: Works in all scenarios
 - ✅ **Transparent**: Shows which verification method was used
@@ -35,9 +41,11 @@ A backend API service for verifying HYPHA token migrations and executing test US
 ## API Endpoints
 
 ### `GET /api/health`
+
 Health check endpoint to verify API status and configuration.
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -55,18 +63,22 @@ Health check endpoint to verify API status and configuration.
 ```
 
 ### `GET/POST /api/status`
+
 Check migration status without executing any transfers.
 
 **Parameters:**
+
 - `telosAccount` (string): Telos account name
 - `ethAddress` (string): Ethereum address for migration verification
 
 **Example Request:**
+
 ```bash
 curl "https://your-api.vercel.app/api/status?telosAccount=myaccount&ethAddress=0x1234567890123456789012345678901234567890"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -85,66 +97,69 @@ curl "https://your-api.vercel.app/api/status?telosAccount=myaccount&ethAddress=0
 ```
 
 ### `POST /api/transfer`
-Execute USDC transfer using **migration table verification**.
+
+Execute HYPHA mint using **migration table verification**.
 
 **Request Body:**
+
 ```json
 {
   "telosAccount": "myaccount",
-  "ethAddress": "0x1234567890123456789012345678901234567890",
-  "amount": "0.000001",
-  "useRandomAddress": false
+  "ethAddress": "0x1234567890123456789012345678901234567890"
 }
 ```
 
 ### `POST /api/transfer-by-tx`
-Execute USDC transfer using **transaction ID verification**.
+
+Execute HYPHA mint using **transaction ID verification**.
 
 **Request Body:**
+
 ```json
 {
   "telosAccount": "myaccount",
   "ethAddress": "0x1234567890123456789012345678901234567890",
-  "transactionId": "abc123def456...",
-  "amount": "0.000001",
-  "useRandomAddress": false
+  "transactionId": "abc123def456..."
 }
 ```
 
 ### `POST /api/transfer-hybrid` (Recommended)
-Execute USDC transfer using **hybrid verification** (table first, transaction fallback).
+
+Execute HYPHA mint using **hybrid verification** (table first, transaction fallback).
 
 **Request Body:**
+
 ```json
 {
   "telosAccount": "myaccount",
   "ethAddress": "0x1234567890123456789012345678901234567890",
-  "transactionId": "abc123def456...",
-  "amount": "0.000001",
-  "useRandomAddress": false
+  "transactionId": "abc123def456..."
 }
 ```
 
 **Note**: `transactionId` is optional but recommended for fallback verification.
 
-**Response (All Transfer Endpoints):**
+**Response (All Mint Endpoints):**
+
 ```json
 {
   "success": true,
-  "message": "Transfer completed successfully",
+  "message": "Mint completed successfully",
   "data": {
     "migration": {
       "verificationMethod": "migration-table|transaction|transaction-fallback",
       "verified": true,
       "account": "myaccount",
+      "amount": "100.0000 HYPHA",
       "ethAddress": "0x1234567890123456789012345678901234567890",
       "migrated": true
     },
-    "transfer": {
+    "mint": {
       "txHash": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
       "blockNumber": 654321,
       "gasUsed": "21000",
-      "amount": "0.000001",
+      "amount": "100.0000 HYPHA",
+      "amountInUnits": "100000000000000000000",
       "to": "0x1234567890123456789012345678901234567890",
       "from": "0x9876543210987654321098765432109876543210"
     }
@@ -165,8 +180,10 @@ Execute USDC transfer using **hybrid verification** (table first, transaction fa
 
 1. **Create a new wallet** specifically for this API (security best practice)
 2. **Fund with ETH** on Base mainnet for gas fees (~0.01 ETH should be sufficient)
-3. **Fund with USDC** on Base mainnet for test transfers (~1 USDC for testing)
+3. **Configure as authorized minter** - The wallet address must be added to the HYPHA contract's authorized minters
 4. **Export the private key** (you'll need this for environment variables)
+
+**Note**: Unlike USDC transfers, HYPHA minting doesn't require pre-funding with tokens since new tokens are minted directly.
 
 ### Step 2: Clone and Prepare the Code
 
@@ -238,6 +255,7 @@ vercel
 #### Option B: Deploy via Vercel Dashboard
 
 1. **Push to GitHub**:
+
    ```bash
    git add .
    git commit -m "Add Hypha migration API"
@@ -254,12 +272,14 @@ vercel
 ### Step 7: Configure Environment Variables
 
 1. **Access Project Settings**:
+
    - Go to your Vercel dashboard
    - Select your project
    - Click "Settings" tab
    - Click "Environment Variables"
 
 2. **Add Required Variables**:
+
    ```
    Name: PRIVATE_KEY
    Value: 0xYOUR_ACTUAL_PRIVATE_KEY_HERE
@@ -280,24 +300,24 @@ vercel
 ### Step 8: Test Your Deployment
 
 1. **Check Health Endpoint**:
+
    ```bash
    curl https://your-project-name.vercel.app/api/health
    ```
 
 2. **Test Status Check** (replace with real values):
+
    ```bash
    curl "https://your-project-name.vercel.app/api/status?telosAccount=myaccount&ethAddress=0x1234567890123456789012345678901234567890"
    ```
 
-3. **Test Transfer** (only if migration is verified):
+3. **Test Mint** (only if migration is verified):
    ```bash
    curl -X POST https://your-project-name.vercel.app/api/transfer \
      -H "Content-Type: application/json" \
      -d '{
        "telosAccount": "myaccount",
-       "ethAddress": "0x1234567890123456789012345678901234567890",
-       "amount": "0.000001",
-       "useRandomAddress": true
+       "ethAddress": "0x1234567890123456789012345678901234567890"
      }'
    ```
 
@@ -307,34 +327,32 @@ Update your frontend to use the deployed API:
 
 ```javascript
 // In your React component
-const API_BASE_URL = 'https://your-project-name.vercel.app/api';
+const API_BASE_URL = "https://your-project-name.vercel.app/api";
 
 const checkMigrationStatus = async (telosAccount, ethAddress) => {
   const response = await fetch(`${API_BASE_URL}/status`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      telosAccount,
-      ethAddress
-    })
-  });
-  return response.json();
-};
-
-const executeTransfer = async (telosAccount, ethAddress) => {
-  const response = await fetch(`${API_BASE_URL}/transfer`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       telosAccount,
       ethAddress,
-      amount: '0.000001',
-      useRandomAddress: true // For testing
-    })
+    }),
+  });
+  return response.json();
+};
+
+const executeMint = async (telosAccount, ethAddress) => {
+  const response = await fetch(`${API_BASE_URL}/transfer`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      telosAccount,
+      ethAddress,
+    }),
   });
   return response.json();
 };
@@ -343,17 +361,26 @@ const executeTransfer = async (telosAccount, ethAddress) => {
 ### Step 10: Production Considerations
 
 1. **Security Enhancements**:
+
    - Implement API key authentication
    - Add rate limiting
    - Set up request logging
-   - Use a dedicated wallet with minimal funds
+   - Use a dedicated wallet with minimal ETH for gas
 
-2. **Monitoring**:
+2. **Authorization Management**:
+
+   - Ensure the API wallet is authorized to mint HYPHA tokens
+   - Monitor minting limits and permissions
+   - Set up alerts for unauthorized mint attempts
+
+3. **Monitoring**:
+
    - Set up Vercel monitoring
    - Configure alerts for failures
-   - Monitor wallet balance
+   - Monitor wallet ETH balance for gas fees
+   - Track minted token amounts
 
-3. **Error Handling**:
+4. **Error Handling**:
    - Implement retry mechanisms
    - Add circuit breakers for external services
    - Set up proper logging
@@ -363,14 +390,17 @@ const executeTransfer = async (telosAccount, ethAddress) => {
 ### Common Issues
 
 1. **"Wallet not configured"**:
+
    - Ensure `PRIVATE_KEY` environment variable is set
    - Redeploy after adding environment variables
 
 2. **"Insufficient balance"**:
+
    - Fund your wallet with USDC and ETH
    - Check balance using `/api/health` endpoint
 
 3. **"Migration not verified"**:
+
    - Ensure the migration was completed on Telos
    - Check the Telos account name and Ethereum address match
 

@@ -140,28 +140,26 @@ async function testStatus() {
 }
 
 async function testTransfer() {
-  console.log('3️⃣  Testing Transfer Endpoint...');
+  console.log('3️⃣  Testing Mint Endpoint...');
   try {
     const response = await makeRequest(`${baseUrl}/api/transfer`, {
       method: 'POST',
       body: {
         telosAccount,
-        ethAddress,
-        amount: '0.000001',
-        useRandomAddress: true // Use random address for testing
+        ethAddress
       }
     });
     
     console.log(`   Status: ${response.status}`);
     
     if (response.status === 200) {
-      console.log(`   ✅ Transfer successful!`);
-      console.log(`   💸 Amount: ${response.data.data?.transfer?.amount || 'unknown'} USDC`);
-      console.log(`   📍 To: ${response.data.data?.transfer?.to || 'unknown'}`);
-      console.log(`   🔗 TX Hash: ${response.data.data?.transfer?.txHash || 'unknown'}`);
-      console.log(`   ⛽ Gas Used: ${response.data.data?.transfer?.gasUsed || 'unknown'}`);
+      console.log(`   ✅ Mint successful!`);
+      console.log(`   💰 Amount: ${response.data.data?.mint?.amount || 'unknown'} HYPHA`);
+      console.log(`   📍 To: ${response.data.data?.mint?.to || 'unknown'}`);
+      console.log(`   🔗 TX Hash: ${response.data.data?.mint?.txHash || 'unknown'}`);
+      console.log(`   ⛽ Gas Used: ${response.data.data?.mint?.gasUsed || 'unknown'}`);
     } else {
-      console.log(`   ⚠️  Transfer failed:`);
+      console.log(`   ⚠️  Mint failed:`);
       console.log(`   ${response.data.message || response.data.error || 'Unknown error'}`);
       
       if (response.data.code === 'MIGRATION_NOT_VERIFIED') {
