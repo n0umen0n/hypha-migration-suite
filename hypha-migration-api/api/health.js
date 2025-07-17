@@ -97,9 +97,7 @@ module.exports = async (req, res) => {
       endpoints: {
         '/api/health': 'GET - Health check',
         '/api/status': 'GET/POST - Check migration status',
-        '/api/transfer': 'POST - Execute HYPHA mint (migration table verification)',
-        '/api/transfer-by-tx': 'POST - Execute HYPHA mint (transaction ID verification)',
-        '/api/transfer-hybrid': 'POST - Execute HYPHA mint (hybrid verification - recommended)'
+        '/api/transfer-hybrid': 'POST - Execute HYPHA mint (migration table verification)'
       }
     };
 

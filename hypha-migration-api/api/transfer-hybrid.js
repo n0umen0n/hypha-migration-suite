@@ -29,13 +29,13 @@ module.exports = async (req, res) => {
       });
     }
 
-    const { telosAccount, ethAddress, transactionId, amount } = req.body;
+    const { telosAccount, ethAddress } = req.body;
 
     // Validate required fields
     if (!telosAccount || !ethAddress) {
       return res.status(400).json({
         error: 'Missing required fields',
-        message: 'telosAccount and ethAddress are required. transactionId is optional for fallback verification.'
+        message: 'telosAccount and ethAddress are required'
       });
     }
 
@@ -47,42 +47,22 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log(`Hybrid mint request: ${telosAccount} -> ${ethAddress}, TX: ${transactionId || 'none'}`);
+    console.log(`HYPHA mint request: ${telosAccount} -> ${ethAddress}`);
 
     let migrationStatus;
-    let verificationMethod;
 
-    // Step 1: Try migration table verification first
-    console.log('Step 1a: Trying migration table verification...');
+    // Step 1: Verify migration status in table
+    console.log('Step 1: Verifying migration in table...');
     try {
       migrationStatus = await blockchainService.verifyMigrationStatus(telosAccount, ethAddress);
-      verificationMethod = 'migration-table';
       console.log('Migration table verification successful:', migrationStatus);
-    } catch (tableError) {
-      console.log('Migration table verification failed:', tableError.message);
-      
-      // Step 1b: Fall back to transaction verification if transactionId provided
-      if (transactionId) {
-        console.log('Step 1b: Trying transaction verification fallback...');
-        try {
-          migrationStatus = await blockchainService.verifyTransactionSuccess(transactionId, telosAccount, ethAddress);
-          verificationMethod = 'transaction-fallback';
-          console.log('Transaction verification successful:', migrationStatus);
-        } catch (txError) {
-          console.log('Transaction verification also failed:', txError.message);
-          return res.status(400).json({
-            error: 'Migration verification failed',
-            message: `Both table verification (${tableError.message}) and transaction verification (${txError.message}) failed`,
-            code: 'MIGRATION_NOT_VERIFIED'
-          });
-        }
-      } else {
-        return res.status(400).json({
-          error: 'Migration verification failed',
-          message: tableError.message + '. No transaction ID provided for fallback verification.',
-          code: 'MIGRATION_NOT_VERIFIED'
-        });
-      }
+    } catch (error) {
+      console.log('Migration table verification failed:', error.message);
+      return res.status(400).json({
+        error: 'Migration verification failed',
+        message: error.message,
+        code: 'MIGRATION_NOT_VERIFIED'
+      });
     }
 
     // Step 2: Check if wallet is configured
@@ -114,7 +94,7 @@ module.exports = async (req, res) => {
       message: 'Mint completed successfully',
       data: {
         migration: {
-          verificationMethod,
+          verificationMethod: 'migration-table',
           ...migrationStatus
         },
         mint: mintResult

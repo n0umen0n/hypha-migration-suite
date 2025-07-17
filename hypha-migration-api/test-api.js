@@ -142,7 +142,7 @@ async function testStatus() {
 async function testTransfer() {
   console.log('3️⃣  Testing Mint Endpoint...');
   try {
-    const response = await makeRequest(`${baseUrl}/api/transfer`, {
+    const response = await makeRequest(`${baseUrl}/api/transfer-hybrid`, {
       method: 'POST',
       body: {
         telosAccount,
@@ -186,7 +186,7 @@ async function runTests() {
   console.log('📝 Notes:');
   console.log('   - Health endpoint should always work');
   console.log('   - Status endpoint tests migration verification');
-  console.log('   - Transfer endpoint requires verified migration');
+  console.log('   - Transfer-hybrid endpoint uses migration table verification');
   console.log('   - Check Vercel logs for detailed error information');
 }
 

@@ -14,29 +14,14 @@ A backend API service for verifying HYPHA token migrations and executing HYPHA t
 
 ## Migration Verification Methods
 
-### 1. Migration Table Verification (Recommended)
-
-**Endpoint**: `/api/transfer`
-
-- ✅ **Most Secure**: Verifies migration is recorded in the blockchain table
-- ✅ **Complete Data**: Access to migration amount, status, timestamps
-- ❌ **Timing Issues**: May fail if table hasn't updated after successful transaction
-
-### 2. Transaction ID Verification (Fast)
-
-**Endpoint**: `/api/transfer-by-tx`
-
-- ✅ **Immediate**: Works right after transaction submission
-- ✅ **Transaction Proof**: Verifies the exact transaction succeeded
-- ❌ **Limited Data**: Only confirms transaction success, not table state
-
-### 3. Hybrid Verification (Best of Both)
+### Migration Table Verification
 
 **Endpoint**: `/api/transfer-hybrid`
 
-- ✅ **Reliable**: Tries table first, falls back to transaction
-- ✅ **User Friendly**: Works in all scenarios
-- ✅ **Transparent**: Shows which verification method was used
+- ✅ **Most Secure**: Verifies migration is recorded in the blockchain table
+- ✅ **Complete Data**: Access to migration amount, status, timestamps
+- ✅ **Exact Amount**: Uses the precise amount from the migration record
+- ✅ **Reliable**: Ensures migration is fully processed and recorded
 
 ## API Endpoints
 
@@ -58,6 +43,11 @@ Health check endpoint to verify API status and configuration.
   "configuration": {
     "walletConfigured": true,
     "walletAddress": "0x1234...5678"
+  },
+  "endpoints": {
+    "/api/health": "GET - Health check",
+    "/api/status": "GET/POST - Check migration status",
+    "/api/transfer-hybrid": "POST - Execute HYPHA mint (migration table verification)"
   }
 }
 ```
@@ -96,7 +86,7 @@ curl "https://your-api.vercel.app/api/status?telosAccount=myaccount&ethAddress=0
 }
 ```
 
-### `POST /api/transfer`
+### `POST /api/transfer-hybrid`
 
 Execute HYPHA mint using **migration table verification**.
 
@@ -109,37 +99,7 @@ Execute HYPHA mint using **migration table verification**.
 }
 ```
 
-### `POST /api/transfer-by-tx`
-
-Execute HYPHA mint using **transaction ID verification**.
-
-**Request Body:**
-
-```json
-{
-  "telosAccount": "myaccount",
-  "ethAddress": "0x1234567890123456789012345678901234567890",
-  "transactionId": "abc123def456..."
-}
-```
-
-### `POST /api/transfer-hybrid` (Recommended)
-
-Execute HYPHA mint using **hybrid verification** (table first, transaction fallback).
-
-**Request Body:**
-
-```json
-{
-  "telosAccount": "myaccount",
-  "ethAddress": "0x1234567890123456789012345678901234567890",
-  "transactionId": "abc123def456..."
-}
-```
-
-**Note**: `transactionId` is optional but recommended for fallback verification.
-
-**Response (All Mint Endpoints):**
+**Response:**
 
 ```json
 {
@@ -147,7 +107,7 @@ Execute HYPHA mint using **hybrid verification** (table first, transaction fallb
   "message": "Mint completed successfully",
   "data": {
     "migration": {
-      "verificationMethod": "migration-table|transaction|transaction-fallback",
+      "verificationMethod": "migration-table",
       "verified": true,
       "account": "myaccount",
       "amount": "100.0000 HYPHA",
@@ -313,7 +273,7 @@ vercel
 
 3. **Test Mint** (only if migration is verified):
    ```bash
-   curl -X POST https://your-project-name.vercel.app/api/transfer \
+   curl -X POST https://your-project-name.vercel.app/api/transfer-hybrid \
      -H "Content-Type: application/json" \
      -d '{
        "telosAccount": "myaccount",
@@ -344,7 +304,7 @@ const checkMigrationStatus = async (telosAccount, ethAddress) => {
 };
 
 const executeMint = async (telosAccount, ethAddress) => {
-  const response = await fetch(`${API_BASE_URL}/transfer`, {
+  const response = await fetch(`${API_BASE_URL}/transfer-hybrid`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
